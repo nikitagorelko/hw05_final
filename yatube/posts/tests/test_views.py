@@ -10,7 +10,7 @@ from django.urls import reverse
 from mixer.backend.django import mixer
 from yatube.settings import NOTES_NUMBER
 
-from ..models import Comment, Group, Post
+from ..models import Comment, Follow, Group, Post
 
 TEMP_MEDIA_ROOT_VIEWS = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
@@ -18,7 +18,7 @@ User = get_user_model()
 
 
 @override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT_VIEWS)
-class PostUrlTest(TestCase):
+class PostViewsTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.user = mixer.blend(User, username='auth')
@@ -31,7 +31,7 @@ class PostUrlTest(TestCase):
         cache.clear()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT_VIEWS, ignore_errors=True)
 
@@ -214,7 +214,7 @@ class PostUrlTest(TestCase):
         expected = Comment.objects.get(author=self.user)
         self.assertEqual(response.context.get('comments')[0], expected)
 
-    def test_cache_index(self):
+    def test_cache_index(self) -> None:
         """Проверяет работу кэша."""
         cached_response = self.authorized_client.get(reverse('posts:index'))
         mixer.blend(Post, author=self.user)
@@ -223,3 +223,64 @@ class PostUrlTest(TestCase):
         cache.clear()
         response2 = self.authorized_client.get(reverse('posts:index'))
         self.assertNotEqual(response2.content, cached_response.content)
+
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT_VIEWS)
+class FollowViewsTest(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user = mixer.blend(User, username='follower')
+        cls.author = mixer.blend(User, username='following')
+        cls.post = mixer.blend(Post, author=cls.author)
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
+
+    def setUp(self) -> None:
+        cache.clear()
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT_VIEWS, ignore_errors=True)
+
+    def test_user_follow(self) -> None:
+        """Проверяет, что авторизованный пользователь может
+        подписываться на других пользователей"""
+        self.authorized_client.post(
+            reverse('posts:profile_follow', kwargs={'username': self.author})
+        )
+        self.assertEqual(Follow.objects.count(), 1)
+
+    def test_user_unfollow(self) -> None:
+        """Проверяет, что авторизованный пользователь может
+        отписываться от других пользователей"""
+        self.authorized_client.post(
+            reverse('posts:profile_follow', kwargs={'username': self.author})
+        )
+        self.authorized_client.post(
+            reverse('posts:profile_unfollow', kwargs={'username': self.author})
+        )
+        self.assertEqual(Follow.objects.count(), 0)
+
+    def test_new_following_post_on_index(self) -> None:
+        """Новая запись пользователя появляется в ленте тех, кто на него подписан
+        и не появляется в ленте тех, кто не подписан."""
+        new_user = mixer.blend(User, username='not_follower')
+        new_authorized_client = Client()
+        new_authorized_client.force_login(new_user)
+        self.authorized_client.post(
+            reverse('posts:profile_follow', kwargs={'username': self.author})
+        )
+        post = mixer.blend(Post, author=self.author)
+        response_follow = self.authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        response_not_follow = new_authorized_client.get(
+            reverse('posts:follow_index')
+        )
+        self.assertIn(
+            post, response_follow.context.get('page_obj').object_list
+        )
+        self.assertNotIn(
+            post, response_not_follow.context.get('page_obj').object_list
+        )

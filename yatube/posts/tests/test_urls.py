@@ -47,8 +47,11 @@ class PostUrlTest(TestCase):
             'missing': '/missing/',
         }
 
+    def setUp(self) -> None:
+        cache.clear()
+
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT_URLS, ignore_errors=True)
 
@@ -85,7 +88,6 @@ class PostUrlTest(TestCase):
                 )
 
     def test_templates(self) -> None:
-        cache.clear()
         """Проверяет, что URL-адрес использует соответствующий шаблон."""
         templates = (
             (

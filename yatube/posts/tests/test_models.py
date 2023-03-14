@@ -18,20 +18,25 @@ class PostModelTest(TestCase):
     @classmethod
     def setUpTestData(cls) -> None:
         cls.user = mixer.blend(User, username='auth')
-        cls.group = mixer.blend(Group)
         cls.post = mixer.blend(Post, author=cls.user)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT_MODELS, ignore_errors=True)
-
-    def test_group_model_have_correct_string_representation(self) -> None:
-        """Проверяет, правильно ли отображается значение поля __str__
-        в объектах модели Group"""
-        self.assertEqual(self.group.title, str(self.group))
 
     def test_post_model_have_correct_string_representation(self) -> None:
         """Проверяет, правильно ли отображается значение поля __str__
         в объектах модели Group"""
         self.assertEqual(self.post.text[:15], str(self.post))
+
+
+class GroupModelTest(TestCase):
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.group = mixer.blend(Group)
+
+    def test_group_model_have_correct_string_representation(self) -> None:
+        """Проверяет, правильно ли отображается значение поля __str__
+        в объектах модели Group"""
+        self.assertEqual(self.group.title, str(self.group))

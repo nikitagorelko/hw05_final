@@ -2,18 +2,19 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 from django.urls import reverse
+from mixer.backend.django import mixer
 
 User = get_user_model()
 
 
 class UsersUrlTest(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-        self.user = User.objects.create_user(username='auth')
-        self.authorized_client = Client()
-        self.authorized_client.force_login(self.user)
+    @classmethod
+    def setUpTestData(cls) -> None:
+        cls.user = mixer.blend(User, username='auth')
+        cls.authorized_client = Client()
+        cls.authorized_client.force_login(cls.user)
 
-    def test_pages_uses_correct_template(self):
+    def test_pages_uses_correct_template(self) -> None:
         """Проверяет, что view-класс использует соответствующий шаблон."""
         templates_pages_names = {
             'users/signup.html': reverse('users:signup'),
@@ -38,7 +39,7 @@ class UsersUrlTest(TestCase):
                 response = self.authorized_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_signup_page_show_correct_context(self):
+    def test_signup_page_show_correct_context(self) -> None:
         """Проверяет, что шаблон signup сформирован с правильным контекстом."""
         response = self.authorized_client.get(reverse('users:signup'))
         form_fields = {

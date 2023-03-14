@@ -44,7 +44,7 @@ class StaticPagesURLTests(TestCase):
                     template[2].get(template[0]), template[1]
                 )
 
-    def test_pages_uses_correct_template(self):
+    def test_pages_uses_correct_template(self) -> None:
         """Проверяет, что view-класс использует соответствующий шаблон."""
         templates_pages_names = {
             'about/author.html': reverse('about:author'),

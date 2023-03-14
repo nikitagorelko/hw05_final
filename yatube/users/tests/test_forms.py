@@ -1,27 +1,22 @@
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import TestCase
 from django.urls import reverse
+from faker import Faker
 
 User = get_user_model()
+fake = Faker()
 
 
 class CreationFormTests(TestCase):
-    def setUp(self):
-        self.guest_client = Client()
-        User.objects.create_user(username='auth')
-
-    def test_sign_up(self):
+    def test_sign_up(self) -> None:
         """Проверят, что валидная форма создает нового пользователя."""
-        users_count = User.objects.count()
-        form_data = {
-            'first_name': 'Test',
-            'last_name': 'Form',
-            'username': 'testuser',
-            'email': 'testform@mail.ru',
+        data = {
+            'first_name': fake.pystr(),
+            'last_name': fake.pystr(),
+            'username': fake.pystr(),
+            'email': fake.email(),
             'password1': 'testpassword',
             'password2': 'testpassword',
         }
-        self.guest_client.post(
-            reverse('users:signup'), data=form_data, follow=True
-        )
-        self.assertEqual(User.objects.count(), users_count + 1)
+        self.client.post(reverse('users:signup'), data=data, follow=True)
+        self.assertEqual(User.objects.count(), 1)

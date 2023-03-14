@@ -26,7 +26,7 @@ class PostFormTests(TestCase):
         cls.authorized_client.force_login(cls.user)
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         super().tearDownClass()
         shutil.rmtree(TEMP_MEDIA_ROOT_FORMS, ignore_errors=True)
 
